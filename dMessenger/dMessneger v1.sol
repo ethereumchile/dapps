@@ -15,7 +15,7 @@ contract dMessenger {
 
 	mapping(uint => Mensaje) public mensajes;
 
-	function dMessenger () public payable {
+	function dMessenger () public {
 
 		creador = msg.sender;
 
