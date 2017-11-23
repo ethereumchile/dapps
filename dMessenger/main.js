@@ -2,7 +2,8 @@ var abi = [{"constant":true,"inputs":[],"name":"contadorMensajes","outputs":[{"n
 var addressContrato = "0x5ae44cc11fcb91b209a2848b0f3bdcf1a870d2d9";
 var contrato = web3.eth.contract(abi);
 var funciones = contrato.at(addressContrato);
-var contadorMensajes = 0;
+var contadorMensajes = [0];
+var historialMensajes = {};
 $(document).ready(function(){
 	if (typeof web3 !== 'undefined') {
 		web3 = new Web3(web3.currentProvider);
@@ -28,26 +29,46 @@ function escribirMensaje(){
 
 function leerMensajes(){
 
-	jQuery("#contenido").html('');
+	var mensajesNuevo = false;
 	funciones.contadorMensajes(function(error, respuesta){
 
 		if(error)	throw error;
-		contadorMensajes = respuesta.c[0];
 
-	})
-	for(var i = 0; i < contadorMensajes; i++){
-		funciones.mensajes(i, function(error, respuesta){
+		contadorMensajes.push(respuesta.c[0]);
 
-			if(error)	throw error;
-			var emisor = respuesta[0];
-			var mensaje = respuesta[1].replace("<", "");
-			mensaje = mensaje.replace(">", "");
-			var fechaPublicacion = respuesta[2];
+	});
 
-			jQuery("<b>Emisor</b>: "+emisor+"<br /><b>Mensaje</b>: "+mensaje+"<br /><b>Fecha</b>: "+ts2date(fechaPublicacion)+"<hr/>").appendTo("#contenido")
+	if(contadorMensajes[contadorMensajes.length-2] != contadorMensajes[contadorMensajes.length-1]){
+		for(var i = contadorMensajes[contadorMensajes.length-2]; i < contadorMensajes[contadorMensajes.length-1]; i++){
+			funciones.mensajes(i, function(error, respuesta){
+
+				if(error)	throw error;
+				var emisor = respuesta[0];
+				var mensaje = respuesta[1].replace("<", "");
+				mensaje = mensaje.replace(">", "");
+				var fechaPublicacion = respuesta[2];
+				if(!historialMensajes[fechaPublicacion]){
+					historialMensajes[fechaPublicacion] = {
+						'emisor': emisor,
+						'mensaje': mensaje,
+						'fechaPublicacion': ts2date(fechaPublicacion)
+					};
+				}
 
 
-		})
+			})			
+		}
+		window.setTimeout(function(){
+			$("#contenido").html('');
+			for(var i = 0; i < Object.keys(historialMensajes).length; i++){
+				emisor = historialMensajes[Object.keys(historialMensajes)[i]].emisor;
+				mensaje = historialMensajes[Object.keys(historialMensajes)[i]].mensaje;
+				fechaPublicacion = historialMensajes[Object.keys(historialMensajes)[i]].fechaPublicacion;
+				$("<b>Emisor</b>: "+emisor+"<br /><b>Mensaje</b>: "+mensaje+"<br /><b>Fecha</b>: "+fechaPublicacion+"<hr/>").appendTo("#contenido")
+
+			}
+		}, 1000);
+
 	}
 }
 function ts2date(ts){
@@ -64,4 +85,5 @@ function ts2date(ts){
 	return time;
 
 }
-window.setInterval("leerMensajes()", 2000);
+
+window.setInterval("leerMensajes()", 3000);
